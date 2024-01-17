@@ -34,7 +34,7 @@ for video in glob.glob("./videos/*.mp4"):
         name = "Contact us"
 
     # Create video clip from file and apply resizing and FX
-    returnedVideo = VideoFileClip(video, target_resolution=(height, width)).fx(vfx.fadein, 1).fx(vfx.fadeout, 1)
+    returnedVideo = VideoFileClip(video, target_resolution=(height, width)).fx(vfx.fadein, 0.5).fx(vfx.fadeout, 0.5)
 
     # Create the nameplate image from files with {name} as file name if the file exists
     if os.path.isfile("./nameplates/" + name + ".png"):
@@ -67,7 +67,8 @@ combined = concatenate_videoclips(clips)
 length = len(glob.glob("./output/*"))
 combined.write_videofile(
     "./output/" + str(length) + ".mp4",
-    codec=codec
+    codec=codec,
+    bitrate="7000k"
 )
 for streamer in streamers:
     print(streamer)
