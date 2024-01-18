@@ -1,4 +1,5 @@
 from moviepy.editor import VideoFileClip, ImageClip, concatenate_videoclips, CompositeVideoClip, vfx
+import imageGenerate
 import os
 import re
 import glob
@@ -17,36 +18,53 @@ parser.add_argument('--width', default=1920)
 parser.add_argument('--height', default=1080)
 parser.add_argument('--codec', default="mpeg4")
 parser.add_argument('--requiredNameplates', default=0)
+parser.add_argument('--font', default="LifeCraft_Font.ttf")
+parser.add_argument('--fontSize', default=150)
+parser.add_argument('--posX', default=520)
+parser.add_argument('--posY', default=185)
+parser.add_argument('--red', default=225)
+parser.add_argument('--green', default=201)
+parser.add_argument('--blue', default=67)
 args = parser.parse_args()
 
 # Convert args to int since it's the number of pixels
 width = int(args.width)
 height = int(args.height)
 requiredNameplates = int(args.requiredNameplates)
+fontSize = int(args.fontSize)
+posX = int(args.posX)
+posY = int(args.posY)
+red = int(args.red)
+green = int(args.green)
+blue = int(args.blue)
 
 codec = args.codec
+font = args.font
+missingName = False
 
 for video in glob.glob("./videos/*.mp4"):
+    missingName = False
     match = re.search(';(.*);', video)
     if (match is not None):
         name = match.group(1)
     else:
         name = "Contact us"
+        missingName = True
 
     # Create video clip from file and apply resizing and FX
     returnedVideo = VideoFileClip(video, target_resolution=(height, width)).fx(vfx.fadein, 0.5).fx(vfx.fadeout, 0.5)
 
-    # Create the nameplate image from files with {name} as file name if the file exists
-    if os.path.isfile("./nameplates/" + name + ".png"):
-        image = ImageClip("./nameplates/" + name + ".png").set_duration(4).set_pos(("left","top"))
-        image = image.crossfadein(1.0)
-        image = image.crossfadeout(1.0)
-        image = image.resize(0.5)
-        returnedVideo = CompositeVideoClip([returnedVideo, image])
-    else:
-        # If nameplates are required, store missing names in an array
-        if requiredNameplates:
-            missingNames.append(name)
+    # Create the nameplate image from files with {name} as file name if nameplates are required
+    if requiredNameplates:
+        if not missingName:
+            imageGenerate.generate_image("./templates/", ("./fonts/" + font), fontSize, name, [posX,posY], [red, green, blue])
+            image = ImageClip("./nameplates/" + name + ".png").set_duration(4).set_pos(("left","top"))
+            image = image.crossfadein(1.0)
+            image = image.crossfadeout(1.0)
+            image = image.resize(0.5)
+            returnedVideo = CompositeVideoClip([returnedVideo, image])
+        else:
+            missingNames.append(video)
 
     # Generate the timecode description
     timeCode = str(datetime.timedelta(seconds=totalTime))
