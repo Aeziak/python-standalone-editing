@@ -7,12 +7,13 @@ import argparse
 import datetime
 
 clips = []
-totalTime = 0
 streamers = []
-name = ""
 missingNames = []
+transitionsArray = []
+totalTime = 0
+name = ""
 
-# Ask arguments to define the video resolution and the export codec (if not encoding with nvdia)
+# Ask arguments to define the video resolution and the export codec
 parser = argparse.ArgumentParser()
 parser.add_argument('--width', default=1920)
 parser.add_argument('--height', default=1080)
@@ -25,6 +26,7 @@ parser.add_argument('--posY', default=185)
 parser.add_argument('--red', default=225)
 parser.add_argument('--green', default=201)
 parser.add_argument('--blue', default=67)
+parser.add_argument('--transitions', default=0)
 args = parser.parse_args()
 
 # Convert args to int since it's the number of pixels
@@ -37,10 +39,20 @@ posY = int(args.posY)
 red = int(args.red)
 green = int(args.green)
 blue = int(args.blue)
+transitions = int(args.transitions)
 
 codec = args.codec
 font = args.font
 missingName = False
+
+if transitions:
+    firstTransition = VideoFileClip("./transition/Black_TwirlPart2V2.mov", has_mask=True, target_resolution=(height, width))
+    firstTransition = firstTransition.set_start(0)
+    secondTransition = VideoFileClip("./transition/Black_TwirlPart1V2.mov", has_mask=True, target_resolution=(height, width))
+    firstTransition = firstTransition.fx( vfx.speedx, 1.5) 
+    secondTransition = secondTransition.fx( vfx.speedx, 1.5)
+
+
 
 for video in glob.glob("./videos/*.mp4"):
     missingName = False
@@ -52,20 +64,24 @@ for video in glob.glob("./videos/*.mp4"):
         missingName = True
 
     # Create video clip from file and apply resizing and FX
-    returnedVideo = VideoFileClip(video, target_resolution=(height, width)).fx(vfx.fadein, 0.5).fx(vfx.fadeout, 0.5)
+    returnedVideo = VideoFileClip(video, target_resolution=(height, width)).fx(vfx.fadein, 0.3).fx(vfx.fadeout, 0.3)
+    if transitions:
+        secondTransition = secondTransition.set_start(returnedVideo.duration - secondTransition.duration)
+        transitionsArray = [firstTransition, secondTransition]
 
     # Create the nameplate image from files with {name} as file name if nameplates are required
     if requiredNameplates:
         if not missingName:
             imageGenerate.generate_image("./templates/", ("./fonts/" + font), fontSize, name, [posX,posY], [red, green, blue])
-            image = ImageClip("./nameplates/" + name + ".png").set_duration(4).set_pos(("left","top"))
+            image = ImageClip("./nameplates/" + name + ".png").set_duration(5).set_pos(("left","top"))
             image = image.crossfadein(1.0)
             image = image.crossfadeout(1.0)
             image = image.resize(0.5)
-            returnedVideo = CompositeVideoClip([returnedVideo, image])
+            returnedVideo = CompositeVideoClip([returnedVideo, image] + transitionsArray)
         else:
             missingNames.append(video)
-
+    else:
+        returnedVideo = CompositeVideoClip([returnedVideo] + transitionsArray)
     # Generate the timecode description
     timeCode = str(datetime.timedelta(seconds=totalTime))
     # Get only the 0:00:00 part and not the milliseconds
