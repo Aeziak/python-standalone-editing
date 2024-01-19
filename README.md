@@ -2,6 +2,22 @@
 
 This is a tool to generate videos with name tags over it.
 
+## Dependencies
+
+This project use moviepy to edit and render the final video.
+
+```
+pip install moviepy
+```
+
+Pillow is also needed to generate nameplates
+
+```
+pip install pillow
+```
+
+## Set up the project
+
 The hierarchy must looks like :	
 
 - nameplates
